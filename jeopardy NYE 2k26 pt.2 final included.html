@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeopardy Game Night</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; }
+        .bg-blue-900 { background-color: #1e3a8a; }
+        .bg-blue-800 { background-color: #1e40af; }
+        .bg-blue-700 { background-color: #1d4ed8; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-blue-500 { background-color: #3b82f6; }
+        .bg-red-500 { background-color: #ef4444; }
+        .bg-red-600 { background-color: #dc2626; }
+        .bg-green-500 { background-color: #22c55e; }
+        .bg-green-600 { background-color: #16a34a; }
+        .bg-yellow-400 { background-color: #facc15; }
+        .bg-yellow-500 { background-color: #eab308; }
+        .bg-purple-600 { background-color: #9333ea; }
+        .text-white { color: white; }
+        .text-yellow-400 { color: #facc15; }
+        .text-blue-900 { color: #1e3a8a; }
+        .text-blue-700 { color: #1d4ed8; }
+        .min-h-screen { min-height: 100vh; }
+        .p-6 { padding: 1.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-8 { padding: 2rem; }
+        .p-3 { padding: 0.75rem; }
+        .p-2 { padding: 0.5rem; }
+        .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mt-8 { margin-top: 2rem; }
+        .mt-4 { margin-top: 1rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded { border-radius: 0.25rem; }
+        .text-5xl { font-size: 3rem; line-height: 1; }
+        .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+        .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-base { font-size: 1rem; line-height: 1.5rem; }
+        .font-bold { font-weight: 700; }
+        .text-center { text-align: center; }
+        .max-w-7xl { max-width: 80rem; }
+        .max-w-4xl { max-width: 56rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .grid { display: grid; }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        .gap-4 { gap: 1rem; }
+        .gap-2 { gap: 0.5rem; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-center { justify-content: center; }
+        .w-full { width: 100%; }
+        .h-20 { height: 5rem; }
+        .min-h-80 { min-height: 200px; }
+        button { cursor: pointer; border: none; transition: all 0.2s; }
+        button:hover:not(:disabled) { transform: scale(1.05); opacity: 0.9; }
+        button:disabled { cursor: not-allowed; opacity: 0.5; }
+        .tracking-wider { letter-spacing: 0.05em; }
+        .category-header { min-height: 80px; }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        const { useState, useEffect } = React;
+
+        const JeopardyGame = () => {
+            const [screen, setScreen] = useState('board');
+            const [selectedQuestion, setSelectedQuestion] = useState(null);
+            const [showAnswer, setShowAnswer] = useState(false);
+            const [teams, setTeams] = useState([
+                { name: 'Team 1', score: 0, color: 'bg-blue-500' },
+                { name: 'Team 2', score: 0, color: 'bg-red-500' },
+                { name: 'Team 3', score: 0, color: 'bg-green-500' }
+            ]);
+            const [usedQuestions, setUsedQuestions] = useState(new Set());
+            const [isFinalJeopardy, setIsFinalJeopardy] = useState(false);
+
+            const categories = [
+                {
+                    name: 'Magic',
+                    questions: [
+                        { value: 400, q: 'What kind of magic is used to make objects appear floating?', a: 'What is Levitation?' },
+                        { value: 800, q: 'A kind of magic that is used to animate the dead or bring back to life.', a: 'What is Necromancy?' },
+                        { value: 1200, q: 'This magic is used to be able to travel to different areas instantaneously.', a: 'What is Teleportation?' },
+                        { value: 1600, q: 'This magic is used to see into the future, past or distant places.', a: 'What is Clairvoyance or Divination?' },
+                        { value: 2000, q: 'An ancient, proto-scientific tradition blending philosophy, spirituality, and experimental chemistry, primarily focused on transforming base metals into gold.', a: 'What is Alchemy?' }
+                    ]
+                },
+                {
+                    name: '"Cat"egories"',
+                    questions: [
+                        { value: 400, q: 'This term refers to a list of items, like the one you might look through from IKEA or a library.', a: 'What is a CATalog?' },
+                        { value: 800, q: 'This natural disaster involves a sudden, violent event; in 2025, it is a term often used by climate scientists to describe extreme weather shifts.', a: 'What is a CATastrophe?' },
+                        { value: 1200, q: 'This insect is often known for when it cocoons and turns into another insect after metamorphosis.', a: 'What is a CATerpillar?' },
+                        { value: 1600, q: 'An underground cemetery with tunnels and chambers, often with niches for bodies', a: 'What is a CATacomb?' },
+                        { value: 2000, q: 'This word describes a state of muscular rigidity and stupor, often associated with specific medical or psychological conditions.', a: 'What is CATatonia (or CATatonic)?' }
+                    ]
+                },
+                {
+                    name: 'Creatures of Myth & Legend',
+                    questions: [
+                        { value: 400, q: 'This mythical creature is known for its ability to grant wishes.', a: 'What is a Genie?' },
+                        { value: 800, q: 'This mythical creature is known for its pointy ears and being able to live a long time.', a: 'What is an Elf?' },
+                        { value: 1200, q: 'According to Greek myth, anyone who looked directly into a Gorgon’s eyes would instantly undergo this transformation.', a: 'What is Petrification? (being turned to stone)' },
+                        { value: 1600, q: 'In Greek mythology, this woman was created by Zeus as punishment for mankind.', a: 'Who is Pandora?' },
+                        { value: 2000, q: 'This gaunt, emaciated creature from folklore is said to be created when a human resorts to cannibalism during times of starvation or is consumed by greed. It is often described as an evil spirit with an ash-gray complexion, glowing red eyes, and a heart of ice', a: 'What is a Wendigo?' }
+                    ]
+                },
+                {
+                    name: 'Diseases & Medicine',
+                    questions: [
+                        { value: 400, q: 'This common name for influenza comes from an Italian word meaning "influence".', a: 'What is the flu?' },
+                        { value: 800, q: 'This pandemic was know for killing around 75-200 million people, wiping out more than half of europe\'s population', a: 'What is the Black Death?' },
+                        { value: 1200, q: 'This lung infection causes inflammation in the air sacs with fluid of pus making it hard to breathe.', a: 'What is Pneumonia?' },
+                        { value: 1600, q: 'This Disease has killed the most people over all time in human history.', a: 'What is TB? (Tuberculosis)' },
+                        { value: 2000, q: 'Known as the largest artery in the human body, this is the medical term for the heart.', a: 'What is the Aorta?' }
+                    ]
+                },
+                {
+                    name: 'School & Education',
+                    questions: [
+                        { value: 400, q: 'This is the name of the test taken by high school students for college admission.', a: 'What is the SAT (or ACT)?' },
+                        { value: 800, q: 'This is what the acronym of "AP" stands for.', a: 'What is Advanced Placement?' },
+                        { value: 1200, q: 'This college university is the only ivy league school in New Hampshire.', a: 'What is Dartmouth?' },
+                        { value: 1600, q: 'This Latin phrase, literally meaning "with great praise," designates the second-highest academic honor given to college graduates.', a: 'What is Magna Cum Laude?' },
+                        { value: 2000, q: 'From the Latin for "nourishing mother," this phrase refers to the school or university a person has attended.', a: 'What is Alma Mater?' }
+                    ]
+                },
+                {
+                    name: 'Phobias',
+                    questions: [
+                        { value: 400, q: 'The fear of spiders.', a: 'What is arachnophobia?' },
+                        { value: 800, q: 'The fear of being stuck in tight spaces.', a: 'What is claustrophobia?' },
+                        { value: 1200, q: 'The fear of heights.', a: 'What is acrophobia?' },
+                        { value: 1600, q: 'The fear of public speaking.', a: 'What is glossophobia?' },
+                        { value: 2000, q: 'The fear of language barriers.', a: 'What is xenophobia?' }
+                    ]
+                }
+            ];
+
+            const finalJeopardyQuestion = {
+                category: 'NEW YEARS TRADITIONS',
+                question: 'New years day used to be celebrated on March 25th in many countries until Julius Caesar established January 1st as the start of the new year in 45 B.C. named after this Roman god.',
+                answer: 'What is Janus? (God of beginnings and endings)'
+            };
+
+            const totalQuestions = categories.reduce((sum, cat) => sum + cat.questions.length, 0);
+
+            useEffect(() => {
+                if (usedQuestions.size === totalQuestions && !isFinalJeopardy) {
+                    setTimeout(() => {
+                        setIsFinalJeopardy(true);
+                        setScreen('final-jeopardy-intro');
+                    }, 1000);
+                }
+            }, [usedQuestions.size, totalQuestions, isFinalJeopardy]);
+
+            const updateScore = (teamIndex, amount) => {
+                setTeams(teams.map((team, i) => 
+                    i === teamIndex ? { ...team, score: Math.max(0, team.score + amount) } : team
+                ));
+            };
+
+            const selectQuestion = (catIndex, qIndex) => {
+                const key = `${catIndex}-${qIndex}`;
+                if (usedQuestions.has(key)) return;
+                
+                setSelectedQuestion({ catIndex, qIndex });
+                setShowAnswer(false);
+                setScreen('question');
+            };
+
+            const markUsed = () => {
+                const key = `${selectedQuestion.catIndex}-${selectedQuestion.qIndex}`;
+                setUsedQuestions(new Set([...usedQuestions, key]));
+                setScreen('board');
+                setSelectedQuestion(null);
+                setShowAnswer(false);
+            };
+
+            const goToBoard = () => {
+                if (isFinalJeopardy) {
+                    setScreen('final-jeopardy-intro');
+                } else {
+                    setScreen('board');
+                }
+                setSelectedQuestion(null);
+                setShowAnswer(false);
+            };
+
+            const isUsed = (catIndex, qIndex) => {
+                return usedQuestions.has(`${catIndex}-${qIndex}`);
+            };
+
+            if (screen === 'final-jeopardy-intro') {
+                return React.createElement('div', { className: 'min-h-screen bg-blue-900 flex items-center justify-center p-6' },
+                    React.createElement('div', { className: 'max-w-4xl w-full text-center' },
+                        React.createElement('h1', { className: 'text-5xl font-bold text-yellow-400 mb-8 pulse' }, 
+                            'FINAL JEOPARDY!'
+                        ),
+                        React.createElement('div', { className: 'bg-blue-700 rounded-lg p-8 mb-8' },
+                            React.createElement('h2', { className: 'text-3xl font-bold text-yellow-400 mb-6' },
+                                'Category: ' + finalJeopardyQuestion.category
+                            ),
+                            React.createElement('p', { className: 'text-white text-xl mb-6' },
+                                'Each team should decide their wager now!'
+                            )
+                        ),
+                        React.createElement('div', { className: 'grid grid-cols-3 gap-4 mb-8' },
+                            teams.map((team, i) =>
+                                React.createElement('div', { key: i, className: `${team.color} rounded-lg p-4 text-white` },
+                                    React.createElement('h3', { className: 'text-xl font-bold text-center mb-2' }, team.name),
+                                    React.createElement('div', { className: 'text-3xl font-bold text-center' }, `$${team.score}`)
+                                )
+                            )
+                        ),
+                        React.createElement('button', {
+                            onClick: () => setScreen('final-jeopardy-question'),
+                            className: 'bg-purple-600 text-white px-8 py-4 rounded-lg text-xl font-bold'
+                        }, 'Reveal Question')
+                    )
+                );
+            }
+
+            if (screen === 'final-jeopardy-question') {
+                return React.createElement('div', { className: 'min-h-screen bg-blue-900 flex items-center justify-center p-6' },
+                    React.createElement('div', { className: 'max-w-4xl w-full' },
+                        React.createElement('div', { className: 'bg-blue-700 rounded-lg p-8 mb-6' },
+                            React.createElement('div', { className: 'text-yellow-400 text-center text-2xl font-bold mb-4' },
+                                finalJeopardyQuestion.category
+                            ),
+                            React.createElement('div', { className: 'bg-blue-800 rounded p-8 min-h-80 flex items-center justify-center' },
+                                React.createElement('p', { className: 'text-white text-3xl text-center' },
+                                    showAnswer ? finalJeopardyQuestion.answer : finalJeopardyQuestion.question
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', { className: 'flex gap-4 justify-center mb-6' },
+                            !showAnswer ?
+                                React.createElement('button', {
+                                    onClick: () => setShowAnswer(true),
+                                    className: 'bg-yellow-400 text-blue-900 px-8 py-4 rounded-lg text-xl font-bold'
+                                }, 'Show Answer') :
+                                React.createElement('button', {
+                                    onClick: () => setScreen('final-results'),
+                                    className: 'bg-green-500 text-white px-8 py-4 rounded-lg text-xl font-bold'
+                                }, 'Go to Final Results')
+                        ),
+
+                        showAnswer && React.createElement('div', { className: 'mt-8 grid grid-cols-3 gap-4' },
+                            teams.map((team, i) =>
+                                React.createElement('div', { key: i, className: `${team.color} rounded p-4` },
+                                    React.createElement('div', { className: 'text-white text-center font-bold mb-2' }, team.name),
+                                    React.createElement('div', { className: 'text-white text-3xl font-bold text-center mb-3' }, `${team.score}`),
+                                    React.createElement('input', {
+                                        type: 'number',
+                                        id: `wager-${i}`,
+                                        placeholder: 'Enter wager',
+                                        className: 'w-full p-2 rounded text-center text-blue-900 font-bold mb-2',
+                                        style: { fontSize: '1.125rem' }
+                                    }),
+                                    React.createElement('div', { className: 'flex gap-2 justify-center' },
+                                        React.createElement('button', {
+                                            onClick: () => {
+                                                const wagerInput = document.getElementById(`wager-${i}`);
+                                                const wager = parseInt(wagerInput.value);
+                                                if (wager && !isNaN(wager)) {
+                                                    updateScore(i, -wager);
+                                                    wagerInput.value = '';
+                                                }
+                                            },
+                                            className: 'bg-red-500 text-white px-4 py-2 rounded text-sm'
+                                        }, 'Wrong'),
+                                        React.createElement('button', {
+                                            onClick: () => {
+                                                const wagerInput = document.getElementById(`wager-${i}`);
+                                                const wager = parseInt(wagerInput.value);
+                                                if (wager && !isNaN(wager)) {
+                                                    updateScore(i, wager);
+                                                    wagerInput.value = '';
+                                                }
+                                            },
+                                            className: 'bg-green-500 text-white px-4 py-2 rounded text-sm'
+                                        }, 'Correct')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+
+            if (screen === 'final-results') {
+                const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+                const winner = sortedTeams[0];
+
+                return React.createElement('div', { className: 'min-h-screen bg-blue-900 flex items-center justify-center p-6' },
+                    React.createElement('div', { className: 'max-w-4xl w-full text-center' },
+                        React.createElement('h1', { className: 'text-5xl font-bold text-yellow-400 mb-8' }, 
+                            '🏆 GAME OVER 🏆'
+                        ),
+                        React.createElement('div', { className: 'bg-blue-700 rounded-lg p-8 mb-8' },
+                            React.createElement('h2', { className: 'text-4xl font-bold text-yellow-400 mb-6' },
+                                `${winner.name} WINS!`
+                            ),
+                            React.createElement('div', { className: 'text-white text-6xl font-bold mb-4' },
+                                `$${winner.score}`
+                            )
+                        ),
+                        React.createElement('div', { className: 'grid grid-cols-3 gap-4 mb-8' },
+                            sortedTeams.map((team, i) =>
+                                React.createElement('div', { key: i, className: `${team.color} rounded-lg p-4 text-white` },
+                                    React.createElement('div', { className: 'text-2xl font-bold text-center mb-2' }, 
+                                        i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'
+                                    ),
+                                    React.createElement('h3', { className: 'text-xl font-bold text-center mb-2' }, team.name),
+                                    React.createElement('div', { className: 'text-3xl font-bold text-center' }, `$${team.score}`)
+                                )
+                            )
+                        ),
+                        React.createElement('button', {
+                            onClick: () => window.location.reload(),
+                            className: 'bg-yellow-400 text-blue-900 px-8 py-4 rounded-lg text-xl font-bold'
+                        }, 'Play Again')
+                    )
+                );
+            }
+
+            if (screen === 'board') {
+                const allQuestionsUsed = usedQuestions.size === totalQuestions;
+
+                return React.createElement('div', { className: 'min-h-screen bg-blue-900 p-6' },
+                    React.createElement('div', { className: 'max-w-7xl mx-auto' },
+                        React.createElement('h1', { className: 'text-5xl font-bold text-yellow-400 text-center mb-8 tracking-wider' }, 'JEOPARDY!'),
+                        
+                        React.createElement('div', { className: 'grid grid-cols-3 gap-4 mb-8' },
+                            teams.map((team, i) =>
+                                React.createElement('div', { key: i, className: `${team.color} rounded-lg p-4 text-white` },
+                                    React.createElement('h3', { className: 'text-xl font-bold text-center mb-2' }, team.name),
+                                    React.createElement('div', { className: 'text-4xl font-bold text-center mb-3' }, `$${team.score}`),
+                                    React.createElement('div', { className: 'flex gap-2 justify-center' },
+                                        React.createElement('button', {
+                                            onClick: () => updateScore(i, -100),
+                                            className: 'p-2 rounded',
+                                            style: { backgroundColor: 'rgba(255,255,255,0.2)' }
+                                        }, '−'),
+                                        React.createElement('button', {
+                                            onClick: () => updateScore(i, 100),
+                                            className: 'p-2 rounded',
+                                            style: { backgroundColor: 'rgba(255,255,255,0.2)' }
+                                        }, '+')
+                                    )
+                                )
+                            )
+                        ),
+
+                        allQuestionsUsed && React.createElement('div', { className: 'text-center mb-4' },
+                            React.createElement('div', { className: 'bg-purple-600 text-white px-8 py-4 rounded-lg text-2xl font-bold inline-block pulse' },
+                                '✨ Ready for Final Jeopardy! ✨'
+                            )
+                        ),
+
+                        React.createElement('div', { className: 'grid grid-cols-6 gap-2' },
+                            categories.map((cat, catIndex) =>
+                                React.createElement('div', { key: catIndex },
+                                    React.createElement('div', { className: 'bg-blue-700 text-yellow-400 text-center p-3 font-bold text-base mb-2 rounded category-header flex items-center justify-center' },
+                                        cat.name.toUpperCase()
+                                    ),
+                                    cat.questions.map((q, qIndex) => {
+                                        const used = isUsed(catIndex, qIndex);
+                                        return React.createElement('button', {
+                                            key: qIndex,
+                                            onClick: () => selectQuestion(catIndex, qIndex),
+                                            disabled: used,
+                                            className: `w-full h-20 mb-2 rounded text-3xl font-bold ${used ? 'text-blue-700' : 'bg-blue-600 text-yellow-400'}`,
+                                            style: { backgroundColor: used ? 'rgba(30,64,175,0.3)' : '#2563eb' }
+                                        }, used ? '✓' : `$${q.value}`);
+                                    })
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+
+            if (screen === 'question' && selectedQuestion) {
+                const { catIndex, qIndex } = selectedQuestion;
+                const question = categories[catIndex].questions[qIndex];
+
+                return React.createElement('div', { className: 'min-h-screen bg-blue-900 flex items-center justify-center p-6' },
+                    React.createElement('div', { className: 'max-w-4xl w-full' },
+                        React.createElement('div', { className: 'bg-blue-700 rounded-lg p-8 mb-6' },
+                            React.createElement('div', { className: 'text-yellow-400 text-center text-2xl font-bold mb-4' },
+                                `${categories[catIndex].name.toUpperCase()} - $${question.value}`
+                            ),
+                            React.createElement('div', { className: 'bg-blue-800 rounded p-8 min-h-80 flex items-center justify-center' },
+                                React.createElement('p', { className: 'text-white text-3xl text-center' },
+                                    showAnswer ? question.a : question.q
+                                )
+                            )
+                        ),
+
+                        React.createElement('div', { className: 'flex gap-4 justify-center' },
+                            !showAnswer ?
+                                React.createElement('button', {
+                                    onClick: () => setShowAnswer(true),
+                                    className: 'bg-yellow-400 text-blue-900 px-8 py-4 rounded-lg text-xl font-bold'
+                                }, 'Show Answer') :
+                                React.createElement('button', {
+                                    onClick: markUsed,
+                                    className: 'bg-green-500 text-white px-8 py-4 rounded-lg text-xl font-bold'
+                                }, 'Mark Complete & Return'),
+                            
+                            React.createElement('button', {
+                                onClick: goToBoard,
+                                className: 'bg-blue-600 text-white px-8 py-4 rounded-lg text-xl font-bold'
+                            }, '🏠 Back to Board')
+                        ),
+
+                        React.createElement('div', { className: 'mt-8 grid grid-cols-3 gap-4' },
+                            teams.map((team, i) =>
+                                React.createElement('div', { key: i, className: `${team.color} rounded p-4` },
+                                    React.createElement('div', { className: 'text-white text-center font-bold mb-2' }, team.name),
+                                    React.createElement('div', { className: 'text-white text-3xl font-bold text-center mb-3' }, `$${team.score}`),
+                                    React.createElement('div', { className: 'flex gap-2 justify-center' },
+                                        React.createElement('button', {
+                                            onClick: () => updateScore(i, -question.value),
+                                            className: 'bg-red-500 text-white px-4 py-2 rounded'
+                                        }, `-${question.value}`),
+                                        React.createElement('button', {
+                                            onClick: () => updateScore(i, question.value),
+                                            className: 'bg-green-500 text-white px-4 py-2 rounded'
+                                        }, `+${question.value}`)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+
+            return null;
+        };
+
+        ReactDOM.render(React.createElement(JeopardyGame), document.getElementById('root'));
+    </script>
+</body>
+</html>
