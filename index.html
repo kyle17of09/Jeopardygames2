@@ -179,7 +179,7 @@
 
             const updateScore = (teamIndex, amount) => {
                 setTeams(teams.map((team, i) => 
-                    i === teamIndex ? { ...team, score: Math.max(0, team.score + amount) } : team
+                    i === teamIndex ? { ...team, score: Math.max(-100000, team.score + amount) } : team
                 ));
             };
 
